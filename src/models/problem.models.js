@@ -1,5 +1,6 @@
 import mongoose from "mongoose"
-import { AvailableProblemDifficulty, problemDifficulty } from "../constants"
+import { AvailableProblemDifficulty, problemDifficulty } from "../constants.js"
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate"
 
 const ExampleSchema = new mongoose.Schema({
   input: { type: String, required: true },
@@ -8,7 +9,7 @@ const ExampleSchema = new mongoose.Schema({
 })
 
 const TestcaseSchema = new mongoose.Schema({
-  input: { type: String, required: true },
+  input: [{ type: String, required: true }],
   expectedOutput: { type: String, required: true },
   hidden: { type: Boolean, default: false },
 })
@@ -25,6 +26,10 @@ const RefrenceSolutionSchema = new mongoose.Schema({
 
 const problemSchema = new mongoose.Schema(
   {
+    id: {
+      type: Number,
+      required: true,
+    },
     title: {
       type: String,
       required: true,
@@ -52,13 +57,19 @@ const problemSchema = new mongoose.Schema(
         required: true,
       },
     ],
+    companies: [{ type: String }],
     hints: [{ type: String }],
     editorial: { type: String },
     testCases: [TestcaseSchema],
     codeSnippet: [CodeSnippetSchema],
-    refrenceSolutions: [RefrenceSolutionSchema],
+    refrenceSolution: [RefrenceSolutionSchema],
+    relatedTopics: {
+      type: String,
+    },
   },
   { timestamps: true }
 )
 
-export default Problem = mongoose.mode("Problem", problemSchema)
+problemSchema.plugin(mongooseAggregatePaginate)
+
+export const Problem = mongoose.model("Problem", problemSchema)
