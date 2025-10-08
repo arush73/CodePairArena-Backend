@@ -35,7 +35,7 @@ const problemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    description: {
+    statement: {
       type: String,
       required: true,
     },
@@ -45,11 +45,11 @@ const problemSchema = new mongoose.Schema(
       default: problemDifficulty.EASY,
     },
     tags: [{ type: String }],
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    // userId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "User",
+    //   required: true,
+    // },
     example: [ExampleSchema],
     constraints: [
       {
@@ -60,14 +60,14 @@ const problemSchema = new mongoose.Schema(
     companies: [{ type: String }],
     hints: [{ type: String }],
     editorial: { type: String },
-    testCases: [TestcaseSchema],
-    codeSnippet: [CodeSnippetSchema],
-    refrenceSolution: [RefrenceSolutionSchema],
+    testCases: [TestcaseSchema],// input output
+    codeSnippet: [CodeSnippetSchema], // language code
+    refrenceSolutions: [RefrenceSolutionSchema],// language solution
     relatedTopics: {
       type: String,
     },
   },
-  { timestamps: true }
+  { timestamps: true , strict:false}
 )
 
 problemSchema.plugin(mongooseAggregatePaginate)

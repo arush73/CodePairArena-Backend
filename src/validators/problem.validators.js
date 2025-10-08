@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { AvailableProblemDifficulty, problemDifficulty } from "../constants"
+import { AvailableProblemDifficulty, problemDifficulty } from "../constants.js"
 
 // Example
 const ExampleSchema = z.object({

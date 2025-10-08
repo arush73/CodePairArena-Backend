@@ -1,8 +1,21 @@
-import asyncHandler from "../utils/asyncHandler.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Problem } from "../models/problem.models.js"
 import { ProblemSchema } from "../validators/problem.validators.js"
+import { LanguageCode } from "../constants.js"
+import axios from "axios"
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const getLanguageIdByName = (name) => {
+  for (const [id, lang] of Object.entries(LanguageCode)) {
+    if (lang.toUpperCase() === name.toUpperCase()) {
+      return Number(id)
+    }
+  }
+  return null // agar nahi mila
+}
 
 // will add all the problems in one go
 const updateProblem = asyncHandler(async (req, res) => {
@@ -16,7 +29,7 @@ const updateProblem = asyncHandler(async (req, res) => {
   const {
     id,
     titie,
-    description,
+    statement,
     difficulty,
     tags,
     userId,
@@ -44,7 +57,7 @@ const getProblemById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, problem, "problem fetched successfully"))
 })
 
-export const getAllProblems = asyncHandler(async (req, res) => {
+const getAllProblems = asyncHandler(async (req, res) => {
   const page = req.query.page
   const limit = req.query.limit
   const skip = (page - 1) * limit
@@ -67,4 +80,166 @@ export const getAllProblems = asyncHandler(async (req, res) => {
   })
 })
 
-export { updateProblem, getProblemById, getAllProblems }
+const addProblem = asyncHandler(async (req, res) => {
+  // will to add teh validations
+
+  const {
+    id,
+    titie,
+    statement,
+    difficulty,
+    examples,
+    constraints,
+    testCases,
+    codeSnippet,
+    refrenceSolutions,
+    tags,
+    companies,
+    hint,
+    editorial,
+  } = req.body
+
+  console.log("This is the data incoming @addproblem controller: ", req.body)
+
+  // check the refrenceSolution before saving it in the database
+  // const batchForJudge0 = refrenceSolutions.map((element) => ({ source_code: element,solution,  language_id:getLanguageIdByName(element.language), stdin:}))
+
+  let batchSubmissionForJudge0 = []
+  for (const soln of refrenceSolutions) {
+    for (const test of testCases) {
+      batchSubmissionForJudge0.push({
+        source_code: soln.solution,
+        language_id: getLanguageIdByName(soln.language),
+        stdin: test.input,
+      })
+    }
+  }
+
+  console.log(
+    "This is the batch submission sent to judge0 @addproblem controller: ",
+    batchSubmissionForJudge0
+  )
+
+  const response = await axios.post(
+    `${process.env.JUDGE0_URL}/submissions/batch/?base64_encoded=false`,
+    { submissions: batchSubmissionForJudge0 },
+    {
+      headers: {
+        "x-rapidapi-key": process.env.JUDGE0_API_KEY,
+        "x-rapidapi-host": process.env.JUDGE0_HOST,
+      },
+    }
+  )
+
+  console.log("These are the response tokens: ", response.data)
+
+  if (!response) throw new ApiError(500, "failed to evaluate the solution")
+
+  const tokens = response.data.map((element) => element.token)
+  console.log(
+    "These are the tokens being sent to poll judge0 @addproblem controller: ",
+    tokens
+  )
+  axios.interceptors.request.use((config) => {
+    console.log("👉 Axios Request:", config.method?.toUpperCase(), config.url)
+    console.log("👉 Params:", config.params)
+    console.log("👉 Data:", config.data)
+    return config
+  })
+
+  // polling tihe judge0 for results
+  let pollingResults
+  let index = 1
+  while (true) {
+    try {
+      const response = await axios.get(
+        `${process.env.JUDGE0_URL}/submissions/batch`,
+        {
+          params: {
+            tokens: tokens.join(","),
+            base64_encoded: false,
+            // fields: "token,stdout,stderr,status_id,language_id",
+          },
+          headers: {
+            "x-rapidapi-key": process.env.JUDGE0_API_KEY,
+            "x-rapidapi-host": process.env.JUDGE0_HOST,
+          },
+        }
+      )
+
+      console.log(
+        "This is the data coming from judge0: ",
+        index,
+        ": ",
+        response.data.submissions
+      )
+
+      let isAllExecuted = response.data.submissions.every((element) => {
+        return element.status.id !== 1 && element.status.id !== 2
+      })
+
+      if (isAllExecuted) {
+        pollingResults = response.data.submissions
+        break
+      }
+
+      await sleep(2000)
+      index++
+    } catch (error) {
+      console.log("This is the fucking error: ", error)
+      console.log("This is the fucking error ka message: ", error.message)
+      console.log("This is the fucking error ka response: ", error.response)
+      throw new ApiError(500, "maa chud gyii req ki ")
+    }
+  }
+
+  console.log("These are the polling reaults: ", pollingResults)
+
+  const expectedOutput = testCases.map((element) => element.expectedOutput)
+
+  let allPasses = true
+  const detailedResults = pollingResults.map((element, index) => {
+    const passed = Number(element.stdout) === Number(expectedOutput[index])
+    if (!passed) allPasses = false
+
+    return {
+      testCase: index + 1,
+      passed,
+      stdout: element.stdout,
+      expected: expectedOutput[index],
+      stderr: element.stderr || null,
+      compile_output: element.compile_output || null,
+      status: element.status.description,
+      time: `${element.time} s`,
+      memory: `${element.memory} KB`,
+    }
+  })
+
+  console.log("These are the detailedResults: ", detailedResults)
+
+  if (!allPasses) throw new ApiError(400, "some reference solution failed")
+
+  const problem = await Problem.create({
+    id,
+    titie,
+    statement,
+    difficulty,
+    examples,
+    constraints,
+    testCases,
+    codeSnippet,
+    refrenceSolutions,
+    tags,
+    companies,
+    hint,
+    editorial,
+  }).select("-refrenceSolutions")
+
+  if (!problem) throw new ApiError(500, "failed to save in the db")
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, problem, "problem added successfully"))
+})
+
+export { updateProblem, getProblemById, getAllProblems, addProblem }

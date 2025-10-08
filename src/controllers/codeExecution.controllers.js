@@ -85,7 +85,7 @@ const executeCode = asyncHandler(async (req, res) => {
       break
     }
 
-    sleep(1000)
+    await sleep(1000)
   }
 
   // logic to check whether all output are matching the expectedoutput or not

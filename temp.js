@@ -1,4 +1,4 @@
-import axios from "axios"
+// import axios from "axios"
 
 const source_code = `#include <iostream>
 using namespace std;
@@ -83,7 +83,7 @@ console.log(JSON.stringify(source_code))
 // })
 
 // console.log(
-//   "This is the resposne that i got from judge0: (which is tokens) ",
+//   "This is the resposne that i got fom judge0: (which is tokens) ",
 //   response.data
 // )
 
@@ -137,3 +137,39 @@ console.log(JSON.stringify(source_code))
 // else {
 //   console.log("\n\nas earlier said maa chud gyii bhen chud gyii tumahari !!")
 // }
+
+import axios from "axios"
+
+const data = {
+  source_code:
+    '#include <iostream>\n using namespace std;\n int main(){\ncout << "judge 0 ek number ka madarchod chutiya ha" << endl;\n return 0;}',
+  language_id: 54,
+  stdin: "",
+}
+
+const token = await axios.post(
+  "http://localhost:2358/submissions?base64_encoded=false&wait=true",
+  data
+)
+
+console.log("this is the token received: ", token.data)
+// const getSubmission = await axios.get(
+//   `http://localhost:2358/submissions/${token.data}`
+// )
+
+// console.log(getSubmission.data)
+
+import axios from "axios"
+
+const options = {
+  method: "GET",
+  url: "",
+  
+}
+
+try {
+  const response = await axios.request(options)
+  console.log(response.data)
+} catch (error) {
+  console.error(error)
+}

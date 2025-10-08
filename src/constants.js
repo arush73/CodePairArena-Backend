@@ -28,3 +28,4 @@ export const AvailableProblemDifficulty = Object.values(problemDifficulty)
 export const LanguageCode = { 71: "PYTHON", 63: "JAVASCRIPT", 62: "JAVA", 54: "C++" }
 
 export const AvailableLanguages = Object.values(LanguageCode)
+
