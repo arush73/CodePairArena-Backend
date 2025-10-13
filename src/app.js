@@ -59,11 +59,16 @@ import healthcheckRouter from "./routes/healthCheck.routes.js"
 import authRouter from "./routes/auth.routes.js"
 import executeCodeRouter from "./routes/executeCode.routes.js"
 import problemRouter from "./routes/problem.routes.js"
+import submissionRouter from "./routes/submission.routes.js"
 
 // decalring routes
+app.get("/", (_, res) => {
+  res.send("Hii the server is running fine")
+})
 app.use("/api/v1/healthcheck", healthcheckRouter)
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/execute", executeCodeRouter)
 app.use("/api/v1/problem", problemRouter)
+app.use("/api/v1/submission", submissionRouter)
 
 export default app

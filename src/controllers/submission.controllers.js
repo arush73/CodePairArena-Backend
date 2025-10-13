@@ -2,10 +2,9 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Problem } from "../models/problem.models.js"
-import axios from "axios"
+import { Submission } from "../models/submission.models.js"
 import { LanguageCode } from "../constants.js"
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+import axios from "axios"
 
 const getLanguageIdByName = (name) => {
   for (const [id, lang] of Object.entries(LanguageCode)) {
@@ -16,17 +15,21 @@ const getLanguageIdByName = (name) => {
   return null
 }
 
-const executeCode = asyncHandler(async (req, res) => {
-  // validations to be added later
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const createSubmission = asyncHandler(async (req, res) => {
   const { code, language } = req.body
   const problemId = req.params.problemId
+  // "68ece11c90c73b758e20492d" = "68ece11c90c73b758e20492d"
 
-  if (!problemId) throw new ApiError(404, "problemId not found in the params")
+  if (!problemId)
+    throw new ApiError(404, "problemId not found in the req params")
 
   const problem = await Problem.findById(problemId)
-  if (!problem) throw new ApiError(404, "No problem found")
+  if (!problem) throw new ApiError(404, "problem not found")
 
-  // executing the code using judge0
+  // judge the solution
+
   const batchSubmission = problem.testCases.map((element) => ({
     source_code: code,
     stdin: element.input,
@@ -40,10 +43,6 @@ const executeCode = asyncHandler(async (req, res) => {
     { submissions: batchSubmission }
   )
 
-  console.log(
-    "these are the tokens coming after batch submission: ",
-    submitBatch.data
-  )
   const tokens = submitBatch.data.map((element) => element.token)
 
   let pollingResults
@@ -69,7 +68,6 @@ const executeCode = asyncHandler(async (req, res) => {
       throw new ApiError(500, "maa chud gyii polling ki: " + error.message)
     }
   }
-  console.log("These are the polling results: ", pollingResults)
 
   const expectedOutput = problem.testCases.map(
     (element) => element.expectedOutput
@@ -94,18 +92,74 @@ const executeCode = asyncHandler(async (req, res) => {
       stderr: element.stderr || null,
       compile_output: element.compile_output || null,
       status: element.status.description,
-      time: `${element.time} s`,
-      memory: `${element.memory} KB`,
+      time: element.time,
+      memory: element.memory,
     }
   })
 
-  console.log("These are the detailed poling results: ", detailedResults)
+  console.log("These are the detailed results: ", detailedResults)
 
-  if (!allPasses) throw new ApiError(400, "some reference solution failed")
+  let submission = null
+
+  if (allPasses) {
+    const averageTime = detailedResults.map((element) => Number(element.time))
+    const averageMemory = detailedResults.map((element) => element.memory)
+
+    console.log("the average time array: ", averageTime)
+    console.log("the average memory array: ", averageMemory)
+
+    submission = await Submission.create({
+      problemId,
+      userId: "68ece11c90c73b758e20492d",
+      sourceCode: code,
+      language: language,
+      status: "ACCEPTED",
+      compileOutput: null,
+      time: Math.floor(
+        averageTime.reduce((sum, val) => sum + val, 0) / averageTime.length
+      ),
+      memory: Math.floor(
+        averageMemory.reduce((sum, val) => sum + val, 0) / averageMemory.length
+      ),
+    })
+  }
+
+  if (!allPasses) {
+    submission = await Submission.create({
+      problemId,
+      userId: "68ece11c90c73b758e20492d",
+      sourceCode: code,
+      language: language,
+      status: "WRONG ANSWER",
+      compileOutput: null,
+      time: "NONE",
+      memory: "NONE",
+    })
+    return res
+      .status(200)
+      .json(new ApiResponse(200, submission, "WRONG ANSWER"))
+  }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, detailedResults, "code executed successfully"))
+    .json(new ApiResponse(200, submission, "ACCEPTED"))
 })
 
-export { executeCode }
+const getSubmisions = asyncHandler(async (req, res) => {
+  const problemId = req.params.problemId
+  const userId = "68ece11c90c73b758e20492d"
+
+  const submission = await Submission.find({ userId, problemId })
+  
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        submission,
+        "submissions fetched succesfully"
+      )
+    )
+})
+
+export { createSubmission, getSubmisions }

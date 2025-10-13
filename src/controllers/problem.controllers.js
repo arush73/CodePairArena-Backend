@@ -5,6 +5,7 @@ import { Problem } from "../models/problem.models.js"
 import { ProblemSchema } from "../validators/problem.validators.js"
 import { LanguageCode } from "../constants.js"
 import axios from "axios"
+import { token } from "morgan"
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -14,7 +15,7 @@ const getLanguageIdByName = (name) => {
       return Number(id)
     }
   }
-  return null // agar nahi mila
+  return null 
 }
 
 // will add all the problems in one go
@@ -85,18 +86,18 @@ const addProblem = asyncHandler(async (req, res) => {
 
   const {
     id,
-    titie,
+    title,
     statement,
     difficulty,
-    examples,
-    constraints,
-    testCases,
-    codeSnippet,
-    refrenceSolutions,
     tags,
+    example,
+    constraints,
     companies,
     hint,
     editorial,
+    testCases,
+    codeSnippet,
+    refrenceSolutions,
   } = req.body
 
   console.log("This is the data incoming @addproblem controller: ", req.body)
@@ -122,13 +123,7 @@ const addProblem = asyncHandler(async (req, res) => {
 
   const response = await axios.post(
     `${process.env.JUDGE0_URL}/submissions/batch/?base64_encoded=false`,
-    { submissions: batchSubmissionForJudge0 },
-    {
-      headers: {
-        "x-rapidapi-key": process.env.JUDGE0_API_KEY,
-        "x-rapidapi-host": process.env.JUDGE0_HOST,
-      },
-    }
+    { submissions: batchSubmissionForJudge0 }
   )
 
   console.log("These are the response tokens: ", response.data)
@@ -140,12 +135,12 @@ const addProblem = asyncHandler(async (req, res) => {
     "These are the tokens being sent to poll judge0 @addproblem controller: ",
     tokens
   )
-  axios.interceptors.request.use((config) => {
-    console.log("👉 Axios Request:", config.method?.toUpperCase(), config.url)
-    console.log("👉 Params:", config.params)
-    console.log("👉 Data:", config.data)
-    return config
-  })
+  // axios.interceptors.request.use((config) => {
+  //   console.log("👉 Axios Request:", config.method?.toUpperCase(), config.url)
+  //   console.log("👉 Params:", config.params)
+  //   console.log("👉 Data:", config.data)
+  //   return config
+  // })
 
   // polling tihe judge0 for results
   let pollingResults
@@ -159,11 +154,7 @@ const addProblem = asyncHandler(async (req, res) => {
             tokens: tokens.join(","),
             base64_encoded: false,
             // fields: "token,stdout,stderr,status_id,language_id",
-          },
-          headers: {
-            "x-rapidapi-key": process.env.JUDGE0_API_KEY,
-            "x-rapidapi-host": process.env.JUDGE0_HOST,
-          },
+          }
         }
       )
 
@@ -183,7 +174,7 @@ const addProblem = asyncHandler(async (req, res) => {
         break
       }
 
-      await sleep(2000)
+      await sleep(3000)
       index++
     } catch (error) {
       console.log("This is the fucking error: ", error)
@@ -196,23 +187,31 @@ const addProblem = asyncHandler(async (req, res) => {
   console.log("These are the polling reaults: ", pollingResults)
 
   const expectedOutput = testCases.map((element) => element.expectedOutput)
+  // const totalTestCases = tokens.length
 
+  index = 0
+  let testCaseNumber = 0
   let allPasses = true
-  const detailedResults = pollingResults.map((element, index) => {
+  const detailedResults = pollingResults.map((element) => {
+    if (index >= expectedOutput.length) index = 0
+
     const passed = Number(element.stdout) === Number(expectedOutput[index])
     if (!passed) allPasses = false
 
+    index++
+    testCaseNumber++
     return {
-      testCase: index + 1,
+      testCase: testCaseNumber,
       passed,
       stdout: element.stdout,
-      expected: expectedOutput[index],
+      expected: expectedOutput[index - 1],
       stderr: element.stderr || null,
       compile_output: element.compile_output || null,
       status: element.status.description,
       time: `${element.time} s`,
       memory: `${element.memory} KB`,
     }
+    
   })
 
   console.log("These are the detailedResults: ", detailedResults)
@@ -221,10 +220,10 @@ const addProblem = asyncHandler(async (req, res) => {
 
   const problem = await Problem.create({
     id,
-    titie,
+    title,
     statement,
     difficulty,
-    examples,
+    example,
     constraints,
     testCases,
     codeSnippet,
@@ -233,7 +232,9 @@ const addProblem = asyncHandler(async (req, res) => {
     companies,
     hint,
     editorial,
-  }).select("-refrenceSolutions")
+  })
+
+  problem.refrenceSolutions = "nahi milega bsdk"
 
   if (!problem) throw new ApiError(500, "failed to save in the db")
 

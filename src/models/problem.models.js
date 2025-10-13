@@ -9,7 +9,7 @@ const ExampleSchema = new mongoose.Schema({
 })
 
 const TestcaseSchema = new mongoose.Schema({
-  input: [{ type: String, required: true }],
+  input: { type: String, required: true },
   expectedOutput: { type: String, required: true },
   hidden: { type: Boolean, default: false },
 })

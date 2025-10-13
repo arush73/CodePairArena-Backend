@@ -1,4 +1,4 @@
-export const DB_NAME = "real_leetclone"
+export const DB_NAME = "project_1"
 
 export const UserRolesEnum = {
   ADMIN: "ADMIN",
