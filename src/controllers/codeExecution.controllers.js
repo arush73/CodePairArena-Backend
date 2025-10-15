@@ -89,11 +89,12 @@ const executeCode = asyncHandler(async (req, res) => {
     return {
       testCase: testCaseNumber,
       passed,
+      input:problem.testCases[testCaseNumber - 1].input,
       stdout: element.stdout,
       expected: expectedOutput[index - 1],
       stderr: element.stderr || null,
       compile_output: element.compile_output || null,
-      status: element.status.description,
+      status: passed? "Accepted" : "Wrong Answer",
       time: `${element.time} s`,
       memory: `${element.memory} KB`,
     }
@@ -101,7 +102,6 @@ const executeCode = asyncHandler(async (req, res) => {
 
   console.log("These are the detailed poling results: ", detailedResults)
 
-  if (!allPasses) throw new ApiError(400, "some reference solution failed")
 
   return res
     .status(200)
