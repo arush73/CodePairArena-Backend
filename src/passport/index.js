@@ -37,6 +37,9 @@ try {
         callbackURL: process.env.GOOGLE_CALLBACK_URL,
       },
       async (_, __, profile, next) => {
+        console.log("These are the shitty shits: ", process.env.GOOGLE_CLIENT_ID)
+        console.log("These are the shitty shits: ", process.env.GOOGLE_CLIENT_SECRET)
+        console.log("These are the shitty shits: ", process.env.GOOGLE_CALLBACK_URL)
         const user = await User.findOne({ email: profile._json.email })
         if (user) {
           if (user.loginType !== UserLoginType.GOOGLE) {
@@ -61,10 +64,10 @@ try {
             username: profile._json.email?.split("@")[0],
             isEmailVerified: true,
             role: UserRolesEnum.USER,
-            avatar: {
-              url: profile._json.picture,
-              localPath: "",
-            },
+            // avatar: {
+            //   url: profile._json.picture,
+            //   localPath: "",
+            // },
             loginType: UserLoginType.GOOGLE,
           })
           if (createdUser) {

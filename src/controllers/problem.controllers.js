@@ -15,7 +15,7 @@ const getLanguageIdByName = (name) => {
       return Number(id)
     }
   }
-  return null 
+  return null
 }
 
 // will add all the problems in one go
@@ -59,28 +59,40 @@ const getProblemById = asyncHandler(async (req, res) => {
 })
 
 const getAllProblems = asyncHandler(async (req, res) => {
-  const page = req.query.page
-  const limit = req.query.limit
-  const skip = (page - 1) * limit
+  // const page = req.query.page
+  // const limit = req.query.limit
+  // const skip = (page - 1) * limit
 
-  const total = await Problem.countDocuments()
+  // const total = await Problem.countDocuments()
 
-  const problems = await Problem.aggregate([
-    { $sort: { createdAt: -1 } }, // latest problems first
-    { $skip: skip }, // skip previous pages
-    { $limit: limit }, // limit current page data
-  ])
+  // const problems = await Problem.aggregate([
+  //   { $sort: { createdAt: -1 } }, // latest problems first
+  //   { $skip: skip }, // skip previous pages
+  //   { $limit: limit }, // limit current page data
+  // ])
 
-  res.status(200).json({
-    success: true,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-    totalProblems: total,
-    problems,
-  })
+  // res.status(200).json({
+  //   success: true,
+  //   page,
+  //   limit,
+  //   totalPages: Math.ceil(total / limit),
+  //   totalProblems: total,
+  //   problems,
+  // })
+
+  const problem = await Problem.find({})
+  if (!problem)
+    throw new ApiError(
+      500,
+      "something went wrong while fetching the problems !!"
+    )
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, problem, "Problems fetched successfully!!!"))
 })
 
+// working fine
 const addProblem = asyncHandler(async (req, res) => {
   // will to add teh validations
 
@@ -154,7 +166,7 @@ const addProblem = asyncHandler(async (req, res) => {
             tokens: tokens.join(","),
             base64_encoded: false,
             // fields: "token,stdout,stderr,status_id,language_id",
-          }
+          },
         }
       )
 
@@ -211,7 +223,6 @@ const addProblem = asyncHandler(async (req, res) => {
       time: `${element.time} s`,
       memory: `${element.memory} KB`,
     }
-    
   })
 
   console.log("These are the detailedResults: ", detailedResults)
