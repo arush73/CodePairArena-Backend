@@ -6,6 +6,6 @@ const router = Router()
 
 import { createSubmission, getSubmisions } from "../controllers/submission.controllers.js"
 
-router.route("/:problemId").post(createSubmission).get(getSubmisions)
+router.route("/:problemId").post(verifyJWT,createSubmission).get(getSubmisions)
 
 export default router

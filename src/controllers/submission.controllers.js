@@ -110,7 +110,7 @@ const createSubmission = asyncHandler(async (req, res) => {
 
     submission = await Submission.create({
       problemId,
-      userId: "68ece11c90c73b758e20492d",
+      userId: req.user._id,
       sourceCode: code,
       language: language,
       status: "ACCEPTED",

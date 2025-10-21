@@ -1,5 +1,6 @@
 import { Router } from "express"
-import { verifyJWT } from "../middlewares/auth.middleware.js"
+import { verifyJWT , verifyRole} from "../middlewares/auth.middleware.js"
+import {  UserRolesEnum } from "../constants.js"
 
 const router = Router()
 // router.use(verifyJWT)
@@ -11,7 +12,7 @@ import {
   getAllProblems
 } from "../controllers/problem.controllers.js"
 
-router.route("/").post(addProblem).get(getAllProblems)
+router.route("/").post(verifyJWT,verifyRole([UserRolesEnum.ADMIN]),addProblem).get(getAllProblems)
 router.route("/:problemId").get(getProblemById)
 
 export default router
