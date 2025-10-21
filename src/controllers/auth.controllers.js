@@ -49,23 +49,25 @@ const registerUser = asyncHandler(async (req, res) => {
     // role: role || UserRolesEnum.USER
   })
 
-  const { unHashedToken, hashedToken, tokenExpiry } =
-    user.generateTemporaryToken()
 
-  user.emailVerificationToken = hashedToken
-  user.emailVerificationExpiry = tokenExpiry
-  await user.save({ validateBeforeSave: false })
+  // not doing the mail thing for now !!
+  // const { unHashedToken, hashedToken, tokenExpiry } =
+  //   user.generateTemporaryToken()
 
-  await sendMail({
-    email: user?.email,
-    subject: "Please verify your email",
-    mailgenContent: emailVerificationMailgenContent(
-      user.username,
-      `${req.protocol}://${req.get(
-        "host"
-      )}/api/v1/users/verify-email/${unHashedToken}`
-    ),
-  })
+  // user.emailVerificationToken = hashedToken
+  // user.emailVerificationExpiry = tokenExpiry
+  // await user.save({ validateBeforeSave: false })
+
+  // await sendMail({
+  //   email: user?.email,
+  //   subject: "Please verify your email",
+  //   mailgenContent: emailVerificationMailgenContent(
+  //     user.username,
+  //     `${req.protocol}://${req.get(
+  //       "host"
+  //     )}/api/v1/users/verify-email/${unHashedToken}`
+  //   ),
+  // })
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
@@ -78,8 +80,12 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        "User registered successfully and verification email has been sent on your email"
+        "User registered successfully"
       )
+      // new ApiResponse(
+      //   200,
+      //   "User registered successfully and verification email has been sent on your email"
+      // )
     )
 })
 
