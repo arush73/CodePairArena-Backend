@@ -6,8 +6,8 @@ const sendMail = async (options) => {
   const mailGenerator = new Mailgen({
     theme: "default",
     product: {
-      name: "boilerplate",
-      link: "http://localhost:8080",
+      name: "Code Pair Arena",
+      link: "https://code-pair-arena.netlify.app",
     },
   })
 
@@ -33,7 +33,7 @@ const sendMail = async (options) => {
   })
 
   const mail = {
-    from: "boilerplatebackend@gmail.com",
+    from: "codepairarena@gmail.com",
     to: options.email,
     subject: options.subject,
     text: emailTextual,

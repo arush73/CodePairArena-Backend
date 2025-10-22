@@ -21,7 +21,7 @@ import jwt from "jsonwebtoken"
 const cookieOptions = () => {
   return {
     httpOnly: true,
-    secure:true,
+    secure: true,
     sameSite: "none",
   }
 }
@@ -49,43 +49,43 @@ const registerUser = asyncHandler(async (req, res) => {
     // role: role || UserRolesEnum.USER
   })
 
-
   // not doing the mail thing for now !!
-  // const { unHashedToken, hashedToken, tokenExpiry } =
-  //   user.generateTemporaryToken()
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken()
 
-  // user.emailVerificationToken = hashedToken
-  // user.emailVerificationExpiry = tokenExpiry
-  // await user.save({ validateBeforeSave: false })
+  user.emailVerificationToken = hashedToken
+  user.emailVerificationExpiry = tokenExpiry
+  await user.save({ validateBeforeSave: false })
 
-  // await sendMail({
-  //   email: user?.email,
-  //   subject: "Please verify your email",
-  //   mailgenContent: emailVerificationMailgenContent(
-  //     user.username,
-  //     `${req.protocol}://${req.get(
-  //       "host"
-  //     )}/api/v1/users/verify-email/${unHashedToken}`
-  //   ),
-  // })
+  await sendMail({
+    email: user?.email,
+    subject: "Please verify your email",
+    mailgenContent: emailVerificationMailgenContent(
+      user.username,
+      `${req.protocol}://${req.get(
+        "host"
+      )}/api/v1/auth/verify-email/${unHashedToken}`
+    ),
+  })
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
   )
 
+  const accessToken = user.generateAccessToken()
+  const refreshToken = user.generateRefreshToken()
+
   if (!createdUser)
     throw new ApiError(500, "Something went wrong while registering the user")
   return res
     .status(201)
+    .cookie("accessToken", accessToken, cookieOptions())
+    .cookie("refreshToken", refreshToken, cookieOptions())
     .json(
       new ApiResponse(
         200,
-        "User registered successfully"
+        "User registered successfully and verification email has been sent on your email"
       )
-      // new ApiResponse(
-      //   200,
-      //   "User registered successfully and verification email has been sent on your email"
-      // )
     )
 })
 
@@ -383,15 +383,14 @@ const handleSocialLogin = asyncHandler(async (req, res) => {
   const refreshToken = user.generateRefreshToken()
 
   return res
-  .cookie("accessToken", accessToken, cookieOptions)
-  .cookie("refreshToken", refreshToken, cookieOptions)
-  .redirect(
-    // redirect user to the frontend with access and refresh token in case user is not using cookies
-    `${process.env.CORS_ORIGIN}/?accessToken=${accessToken}&refreshToken=${refreshToken}`
-  )
-    // .status(301)
-    // .json(new ApiResponse(200, "user created sucessfully via google", user))
-  
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .redirect(
+      // redirect user to the frontend with access and refresh token in case user is not using cookies
+      `${process.env.CORS_ORIGIN}/?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    )
+  // .status(301)
+  // .json(new ApiResponse(200, "user created sucessfully via google", user))
 })
 
 export {
