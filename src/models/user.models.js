@@ -16,6 +16,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: `https://via.placeholder.com/200x200.png`,
     },
+    username: {
+      type: String,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      required: true,
+    },
     email: {
       type: String,
       required: true,
@@ -68,7 +75,7 @@ userSchema.pre("save", async function (next) {
 })
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password,this.password)
+  return await bcrypt.compare(password, this.password)
 }
 
 userSchema.methods.generateAccessToken = function () {

@@ -44,6 +44,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     email,
+    username: email.split("@")[0],
     password,
     isEmailVerified: false,
     // role: role || UserRolesEnum.USER
@@ -84,6 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
+        createdUser,
         "User registered successfully and verification email has been sent on your email"
       )
     )
