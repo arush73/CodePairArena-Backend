@@ -3,7 +3,7 @@ import nodemailer from "nodemailer"
 import logger from "../logger/winston.logger.js"
 import { Resend } from "resend"
 
-const resent = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 const sendMail = async (options) => {
   const mailGenerator = new Mailgen({
@@ -46,12 +46,10 @@ const sendMail = async (options) => {
   try {
     // await transporter.sendMail(mail)
 
-    const resend = new Resend("re_Vn3Mdz13_Ltvhp5gqgmm1ygwB35xNbVLb")
-
-    resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: "arushgzbin@gmail.com",
-      subject: "Hello World",
+    await resend.emails.send({
+      from: "Code Pair Arena <onboarding@resend.dev>",
+      to: options.email,
+      subject: options.subject,
       // html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
       html: emailHTML,
       text: emailTextual,
