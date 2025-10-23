@@ -1,6 +1,9 @@
 import Mailgen from "mailgen"
 import nodemailer from "nodemailer"
 import logger from "../logger/winston.logger.js"
+import { Resend } from "resend"
+
+const resent = new Resend(process.env.RESEND_API_KEY)
 
 const sendMail = async (options) => {
   const mailGenerator = new Mailgen({
@@ -41,7 +44,18 @@ const sendMail = async (options) => {
   }
 
   try {
-    await transporter.sendMail(mail)
+    // await transporter.sendMail(mail)
+
+    const resend = new Resend("re_Vn3Mdz13_Ltvhp5gqgmm1ygwB35xNbVLb")
+
+    resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "arushgzbin@gmail.com",
+      subject: "Hello World",
+      // html: "<p>Congrats on sending your <strong>first email</strong>!</p>",
+      html: emailHTML,
+      text: emailTextual,
+    })
   } catch (error) {
     logger.error(
       "Email service failed silently. Make sure you have provided your MAILTRAP credentials in the .env file"
