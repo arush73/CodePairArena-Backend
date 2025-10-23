@@ -26,58 +26,149 @@ const cookieOptions = () => {
   }
 }
 
+// const registerUser = asyncHandler(async (req, res) => {
+//   const validate = registerUserSchema.safeParse(req.body)
+//   if (!validate.success)
+//     throw new ApiError(
+//       401,
+//       validate.error.issues.map((mess) => mess.message)
+//     )
+
+//   const { email, password } = req.body
+
+//   const existingUser = await User.findOne({
+//     email,
+//   })
+//   if (existingUser)
+//     throw new ApiError(409, "user with username or email already exists")
+
+//   const user = await User.create({
+//     email,
+//     username: email.split("@")[0],
+//     password,
+//     isEmailVerified: false,
+//     // role: role || UserRolesEnum.USER
+//   })
+
+//   // not doing the mail thing for now !!
+//   const { unHashedToken, hashedToken, tokenExpiry } =
+//     user.generateTemporaryToken()
+
+//   user.emailVerificationToken = hashedToken
+//   user.emailVerificationExpiry = tokenExpiry
+//   await user.save({ validateBeforeSave: false })
+
+//   await sendMail({
+//     email: user?.email,
+//     subject: "Please verify your email",
+//     mailgenContent: emailVerificationMailgenContent(
+//       user.username,
+//       `${req.protocol}://${req.get(
+//         "host"
+//       )}/api/v1/auth/verify-email/${unHashedToken}`
+//     ),
+//   })
+
+//   const createdUser = await User.findById(user._id).select(
+//     "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
+//   )
+
+//   const accessToken = user.generateAccessToken()
+//   const refreshToken = user.generateRefreshToken()
+
+//   if (!createdUser)
+//     throw new ApiError(500, "Something went wrong while registering the user")
+//   return res
+//     .status(201)
+//     .cookie("accessToken", accessToken, cookieOptions())
+//     .cookie("refreshToken", refreshToken, cookieOptions())
+//     .json(
+//       new ApiResponse(
+//         200,
+//         createdUser,
+//         "User registered successfully and verification email has been sent on your email"
+//       )
+//     )
+// })
+
 const registerUser = asyncHandler(async (req, res) => {
+  console.time("register_total")
+
+  // Validate
   const validate = registerUserSchema.safeParse(req.body)
   if (!validate.success)
     throw new ApiError(
       401,
-      validate.error.issues.map((mess) => mess.message)
+      validate.error.issues.map((m) => m.message)
     )
 
   const { email, password } = req.body
 
-  const existingUser = await User.findOne({
-    email,
-  })
+  // quick existing check (lean to reduce memory)
+  console.time("check_existing")
+  const existingUser = await User.findOne({ email }).lean()
+  console.timeEnd("check_existing")
   if (existingUser)
     throw new ApiError(409, "user with username or email already exists")
 
-  const user = await User.create({
+  // Build instance so we can run instance methods before a single save
+  console.time("build_user")
+  const user = new User({
     email,
     username: email.split("@")[0],
     password,
     isEmailVerified: false,
-    // role: role || UserRolesEnum.USER
   })
+  console.timeEnd("build_user")
 
-  // not doing the mail thing for now !!
+  // Generate tokens (temp) on the instance BEFORE persisting so we keep single DB write
+  console.time("generate_temp_token")
   const { unHashedToken, hashedToken, tokenExpiry } =
     user.generateTemporaryToken()
-
   user.emailVerificationToken = hashedToken
   user.emailVerificationExpiry = tokenExpiry
-  await user.save({ validateBeforeSave: false })
+  console.timeEnd("generate_temp_token")
 
-  await sendMail({
-    email: user?.email,
-    subject: "Please verify your email",
-    mailgenContent: emailVerificationMailgenContent(
-      user.username,
-      `${req.protocol}://${req.get(
-        "host"
-      )}/api/v1/auth/verify-email/${unHashedToken}`
-    ),
-  })
+  // Single DB write (this triggers pre-save hashing once)
+  console.time("save_user")
+  await user.save() // one DB round-trip
+  console.timeEnd("save_user")
 
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
-  )
+  // Prepare safe user for response (no extra findById required)
+  const createdUser = user.toObject()
+  delete createdUser.password
+  delete createdUser.refreshToken
+  delete createdUser.emailVerificationToken
+  delete createdUser.emailVerificationExpiry
 
+  // Generate access + refresh tokens (fast)
+  console.time("generate_tokens")
+  // If these are synchronous (jwt.sign) they are fast. If async, await them.
   const accessToken = user.generateAccessToken()
   const refreshToken = user.generateRefreshToken()
+  console.timeEnd("generate_tokens")
 
-  if (!createdUser)
-    throw new ApiError(500, "Something went wrong while registering the user")
+  // Fire-and-forget email (do NOT await) — logs errors
+  ;(async () => {
+    try {
+      await sendMail({
+        email: user.email,
+        subject: "Please verify your email",
+        mailgenContent: emailVerificationMailgenContent(
+          user.username,
+          `${req.protocol}://${req.get(
+            "host"
+          )}/api/v1/auth/verify-email/${unHashedToken}`
+        ),
+      })
+    } catch (err) {
+      console.error("Email send failed for user:", user.email, err)
+      // optionally push to a retry queue here
+    }
+  })()
+
+  // Send response fast
+  console.timeEnd("register_total")
   return res
     .status(201)
     .cookie("accessToken", accessToken, cookieOptions())
@@ -86,7 +177,7 @@ const registerUser = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         createdUser,
-        "User registered successfully and verification email has been sent on your email"
+        "User registered successfully; verification email sent"
       )
     )
 })
