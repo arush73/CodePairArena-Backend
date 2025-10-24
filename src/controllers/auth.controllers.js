@@ -17,6 +17,7 @@ import {
 import crypto from "crypto"
 import { uploadCloudinary } from "../utils/cloudinary.js"
 import jwt from "jsonwebtoken"
+import axios from "axios"
 
 const cookieOptions = () => {
   return {
@@ -149,23 +150,46 @@ const registerUser = asyncHandler(async (req, res) => {
   console.timeEnd("generate_tokens")
 
   // Fire-and-forget email (do NOT await) — logs errors
-  ;(async () => {
-    try {
-      await sendMail({
-        email: user.email,
-        subject: "Please verify your email",
-        mailgenContent: emailVerificationMailgenContent(
-          user.username,
-          `${req.protocol}://${req.get(
-            "host"
-          )}/api/v1/auth/verify-email/${unHashedToken}`
-        ),
-      })
-    } catch (err) {
-      console.error("Email send failed for user:", user.email, err)
-      // optionally push to a retry queue here
+  // ;(async () => {
+  //   try {
+  //     await sendMail({
+  //       email: user.email,
+  //       subject: "Please verify your email",
+  //       mailgenContent: emailVerificationMailgenContent(
+  //         user.username,
+  //         `${req.protocol}://${req.get(
+  //           "host"
+  //         )}/api/v1/auth/verify-email/${unHashedToken}`
+  //       ),
+  //     })
+  //   } catch (err) {
+  //     console.error("Email send failed for user:", user.email, err)
+  //     // optionally push to a retry queue here
+  //   }
+  // })()
+
+  // simply send a req to the ec2 for sending a mail
+  // const sendMail = {
+  //   email: user.email,
+  //   subject: "Please verify your email",
+  //   mailgenContent: emailVerificationMailgenContent(
+  //     user.username,
+  //     `${req.protocol}://${req.get(
+  //       "host"
+  //     )}/api/v1/auth/verify-email/${unHashedToken}`
+  //   ),
+  // }
+
+  axios.post(
+    process.env.MAIL_SERVICE_URL +
+      "/verify-email/" +
+      unHashedToken +
+      "/" +
+      process.env.MAIL_SERVICE_TOKEN,
+    {
+      email: user.email,
     }
-  })()
+  )
 
   // Send response fast
   console.timeEnd("register_total")
@@ -276,7 +300,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
   })
 
   // if (!user) throw new ApiError(489, "Token is invalid or expired")
-  if (!user) return res.status(200).send(`
+  if (!user)
+    return res.status(200).send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -324,13 +349,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
     </html>
   `)
 
-
   user.emailVerificationToken = undefined
   user.emailVerificationExpiry = undefined
   user.isEmailVerified = true
   await user.save({ validateBeforeSave: false })
 
-return res.status(200).send(`
+  return res.status(200).send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -377,7 +401,6 @@ return res.status(200).send(`
     </body>
     </html>
   `)
-
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
