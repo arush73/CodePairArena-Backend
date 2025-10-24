@@ -275,16 +275,109 @@ const verifyEmail = asyncHandler(async (req, res) => {
     emailVerificationExpiry: { $gt: Date.now() },
   })
 
-  if (!user) throw new ApiError(489, "Token is invalid or expired")
+  // if (!user) throw new ApiError(489, "Token is invalid or expired")
+  if (!user) return res.status(200).send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Email Verified</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background: #f3f4f6;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+        }
+        .card {
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          text-align: center;
+        }
+        .btn {
+          margin-top: 20px;
+          padding: 10px 20px;
+          background: #2563eb;
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+          font-weight: bold;
+        }
+        .btn:hover {
+          background: #1d4ed8;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h2>✅ Email vrification failed</h2>
+        <p>Token is either expired or invalid</p>
+        <a class="btn" href="https://code-pair-arena.netlify.app">Continue</a>
+      </div>
+    </body>
+    </html>
+  `)
+
 
   user.emailVerificationToken = undefined
   user.emailVerificationExpiry = undefined
   user.isEmailVerified = true
   await user.save({ validateBeforeSave: false })
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "Email is verified", { isEmailVerified: true }))
+return res.status(200).send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Email Verified</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background: #f3f4f6;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+        }
+        .card {
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          text-align: center;
+        }
+        .btn {
+          margin-top: 20px;
+          padding: 10px 20px;
+          background: #2563eb;
+          color: white;
+          text-decoration: none;
+          border-radius: 5px;
+          font-weight: bold;
+        }
+        .btn:hover {
+          background: #1d4ed8;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h2>✅ Email Successfully Verified!</h2>
+        <p>You can now continue to the application.</p>
+        <a class="btn" href="https://code-pair-arena.netlify.app">Continue</a>
+      </div>
+    </body>
+    </html>
+  `)
+
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
