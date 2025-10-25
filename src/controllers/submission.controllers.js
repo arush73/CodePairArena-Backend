@@ -147,7 +147,7 @@ const createSubmission = asyncHandler(async (req, res) => {
 
 const getSubmisions = asyncHandler(async (req, res) => {
   const problemId = req.params.problemId
-  const userId = "68ece11c90c73b758e20492d"
+  const userId = req.user._id
 
   const submission = await Submission.find({ userId, problemId })
   
