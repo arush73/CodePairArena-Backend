@@ -63,7 +63,7 @@ const executeCode = asyncHandler(async (req, res) => {
         break
       }
 
-      await sleep(3000)
+      await sleep(1500)
       index++
     } catch (error) {
       throw new ApiError(500, "maa chud gyii polling ki: " + error.message)

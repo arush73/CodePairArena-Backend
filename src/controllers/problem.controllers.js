@@ -186,7 +186,7 @@ const addProblem = asyncHandler(async (req, res) => {
         break
       }
 
-      await sleep(3000)
+      await sleep(1500)
       index++
     } catch (error) {
       console.log("This is the fucking error: ", error)
