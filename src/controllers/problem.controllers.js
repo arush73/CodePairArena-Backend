@@ -207,7 +207,7 @@ const addProblem = asyncHandler(async (req, res) => {
   const detailedResults = pollingResults.map((element) => {
     if (index >= expectedOutput.length) index = 0
 
-    const passed = Number(element.stdout) === Number(expectedOutput[index])
+    const passed = (element.stdout) === (expectedOutput[index])
     if (!passed) allPasses = false
 
     index++
