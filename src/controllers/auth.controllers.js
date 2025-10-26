@@ -594,15 +594,15 @@ const handleSocialLogin = asyncHandler(async (req, res) => {
   return res
     .cookie("accessToken", accessToken, cookieOptions())
     .cookie("refreshToken", refreshToken, cookieOptions())
-    // .redirect(
-    //   // redirect user to the frontend with access and refresh token in case user is not using cookies
-    //   `${process.env.CORS_ORIGIN}/${accessToken}/${refreshToken}`
-    // )
-  .redirect(
-    // redirect user to the frontend with access and refresh token in case user is not using cookies
-    `http://localhost:3001/setter/${accessToken}/${refreshToken}`
-  )
-  // .status(301)
+    .redirect(
+      // redirect user to the frontend with access and refresh token in case user is not using cookies
+      `${process.env.CORS_ORIGIN}/setter/${accessToken}/${refreshToken}`
+    )
+  // .redirect(
+  //   // redirect user to the frontend with access and refresh token in case user is not using cookies
+  //   `http://localhost:3001/setter/${accessToken}/${refreshToken}`
+  // )
+  // // .status(301)
   // .json(new ApiResponse(200, "user created sucessfully via google", user))
 })
 
