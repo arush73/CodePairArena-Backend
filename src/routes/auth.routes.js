@@ -16,7 +16,8 @@ import {
   changeCurrentPassword,
   getCurrentUser,
   updateUserAvatar,
-  handleSocialLogin
+  handleSocialLogin,
+  cookieSetter,
 } from "../controllers/auth.controllers.js"
 
 // open routes
@@ -56,10 +57,12 @@ router.route("/github").get(
 
 router
   .route("/google/callback")
-  .get(passport.authenticate("google"), handleSocialLogin);
+  .get(passport.authenticate("google"), handleSocialLogin)
 
 router
   .route("/github/callback")
-  .get(passport.authenticate("github"), handleSocialLogin);
+  .get(passport.authenticate("github"), handleSocialLogin)
+
+router.route("/cookie-setter").post(cookieSetter)
 
 export default router

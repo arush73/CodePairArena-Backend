@@ -50,7 +50,7 @@ const getProblemById = asyncHandler(async (req, res) => {
   if (!req.params)
     throw new ApiError(404, "problemId not found in the req params")
 
-  const problem = await Problem.findById(problemId)
+  const problem = await Problem.findById(problemId).select("-refrenceSolutions")
   if (!problem) throw new ApiError(404, "problem not found")
 
   return res

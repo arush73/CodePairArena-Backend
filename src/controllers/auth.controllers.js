@@ -592,16 +592,37 @@ const handleSocialLogin = asyncHandler(async (req, res) => {
   const refreshToken = user.generateRefreshToken()
 
   return res
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, cookieOptions())
+    .cookie("refreshToken", refreshToken, cookieOptions())
     .redirect(
       // redirect user to the frontend with access and refresh token in case user is not using cookies
       `${process.env.CORS_ORIGIN}/?accessToken=${accessToken}&refreshToken=${refreshToken}`
     )
+  // .redirect(
+  //   // redirect user to the frontend with access and refresh token in case user is not using cookies
+  //   `http://localhost:3000/?accessToken=${accessToken}&refreshToken=${refreshToken}`
+  // )
   // .status(301)
   // .json(new ApiResponse(200, "user created sucessfully via google", user))
 })
 
+const cookieSetter = asyncHandler(async (req, res) => {
+  const { accessToken, refreshToken } = req.body
+
+  if(!accessToken || !refreshToken)
+    throw new ApiError(400, "token to send krr bc!!")
+
+  return res
+    .cookie("accessToken", accessToken, cookieOptions())
+    .cookie("refreshToken", refreshToken, cookieOptions())
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "hoo gyii bhenchod cookie set bsdki !! "
+      )
+    )
+})
 export {
   registerUser,
   loginUser,
@@ -614,4 +635,5 @@ export {
   getCurrentUser,
   updateUserAvatar,
   handleSocialLogin,
+  cookieSetter
 }
