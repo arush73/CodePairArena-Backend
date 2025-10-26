@@ -19,7 +19,7 @@ export const AvailableSocialLogins = Object.values(UserLoginType)
 
 export const problemDifficulty = {
   EASY: "EASY",
-  MEDIUM: "MEDUIM",
+  MEDIUM: "MEDIUM",
   HARD: "HARD",
 }
 

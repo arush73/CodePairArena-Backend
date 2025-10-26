@@ -81,7 +81,7 @@ const getAllProblems = asyncHandler(async (req, res) => {
   // })
 
   // const problem = await Problem.find({})
-  const problem = await Problem.find({}).sort({ id: 1 })
+  const problem = await Problem.find({}, {id:1,title: 1 , difficulty: 1}).sort({ id: 1 })
 
   if (!problem)
     throw new ApiError(
