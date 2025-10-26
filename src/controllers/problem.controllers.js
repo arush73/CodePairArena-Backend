@@ -80,7 +80,9 @@ const getAllProblems = asyncHandler(async (req, res) => {
   //   problems,
   // })
 
-  const problem = await Problem.find({})
+  // const problem = await Problem.find({})
+  const problem = await Problem.find({}).sort({ id: 1 })
+
   if (!problem)
     throw new ApiError(
       500,
