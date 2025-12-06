@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Problem } from "../models/problem.models.js"
 import { Submission } from "../models/submission.models.js"
+import { UserProfile } from "../models/userProfile.models.js"
 import { LanguageCode } from "../constants.js"
 import axios from "axios"
 
@@ -101,6 +102,40 @@ const createSubmission = asyncHandler(async (req, res) => {
 
   let submission = null
 
+  // Ensure profile exists
+  let profile = await UserProfile.findOne({ owner: req.user._id })
+  if (!profile) {
+    profile = await UserProfile.create({ owner: req.user._id })
+  }
+
+  // Update Streak Logic
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const lastActive = profile.solvedStats?.lastActiveDate
+    ? new Date(profile.solvedStats.lastActiveDate)
+    : null
+  if (lastActive) {
+    lastActive.setHours(0, 0, 0, 0)
+  }
+
+  if (!lastActive || lastActive.getTime() < today.getTime()) {
+    // If last active was yesterday, increment streak
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (lastActive && lastActive.getTime() === yesterday.getTime()) {
+      profile.solvedStats.streak = (profile.solvedStats.streak || 0) + 1
+    } else if (!lastActive || lastActive.getTime() < yesterday.getTime()) {
+      // Streak broken or first time
+      profile.solvedStats.streak = 1
+    }
+    // If lastActive is today, do nothing (already counted)
+
+    profile.solvedStats.lastActiveDate = new Date()
+    await profile.save()
+  }
+
   if (allPasses) {
     const averageTime = detailedResults.map((element) => Number(element.time))
     const averageMemory = detailedResults.map((element) => element.memory)
@@ -122,6 +157,36 @@ const createSubmission = asyncHandler(async (req, res) => {
         averageMemory.reduce((sum, val) => sum + val, 0) / averageMemory.length
       ),
     })
+
+    // Update Solved Stats if not already solved
+    const alreadySolved = await Submission.findOne({
+      userId: req.user._id,
+      problemId,
+      status: "ACCEPTED",
+      _id: { $ne: submission._id }, // Exclude the one we just created
+    })
+
+    if (!alreadySolved) {
+      let difficulty = problem.difficulty
+        ? problem.difficulty.toLowerCase().trim()
+        : "easy"
+      if (!["easy", "medium", "hard"].includes(difficulty)) {
+        difficulty = "easy" // Default fallback
+      }
+
+      console.log(`Updating stats for difficulty: ${difficulty}`)
+
+      // Increment total and specific difficulty
+      await UserProfile.findOneAndUpdate(
+        { owner: req.user._id },
+        {
+          $inc: {
+            "solvedStats.total": 1,
+            [`solvedStats.${difficulty}`]: 1,
+          },
+        }
+      )
+    }
   }
 
   if (!allPasses) {
@@ -140,9 +205,7 @@ const createSubmission = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, submission, "WRONG ANSWER"))
   }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, submission, "ACCEPTED"))
+  return res.status(200).json(new ApiResponse(200, submission, "ACCEPTED"))
 })
 
 const getSubmisions = asyncHandler(async (req, res) => {
@@ -150,16 +213,31 @@ const getSubmisions = asyncHandler(async (req, res) => {
   const userId = req.user._id
 
   const submission = await Submission.find({ userId, problemId })
-  
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, submission, "submissions fetched succesfully"))
+})
+
+const getMySubmissions = asyncHandler(async (req, res) => {
+  const userId = req.user._id
+  const { limit } = req.query
+
+  let query = Submission.find({ userId })
+    .populate("problemId", "title difficulty")
+    .sort({ createdAt: -1 })
+
+  if (limit) {
+    query = query.limit(parseInt(limit))
+  }
+
+  const submissions = await query
+
   return res
     .status(200)
     .json(
-      new ApiResponse(
-        200,
-        submission,
-        "submissions fetched succesfully"
-      )
+      new ApiResponse(200, submissions, "User submissions fetched successfully")
     )
 })
 
-export { createSubmission, getSubmisions }
+export { createSubmission, getSubmisions, getMySubmissions }

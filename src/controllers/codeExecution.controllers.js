@@ -81,7 +81,7 @@ const executeCode = asyncHandler(async (req, res) => {
   const detailedResults = pollingResults.map((element) => {
     if (index >= expectedOutput.length) index = 0
 
-    const passed = (element.stdout) === (expectedOutput[index])
+    const passed = element.stdout === expectedOutput[index]
     if (!passed) allPasses = false
 
     index++
@@ -89,19 +89,18 @@ const executeCode = asyncHandler(async (req, res) => {
     return {
       testCase: testCaseNumber,
       passed,
-      input:problem.testCases[testCaseNumber - 1].input,
+      input: problem.testCases[testCaseNumber - 1].input,
       stdout: element.stdout,
       expected: expectedOutput[index - 1],
       stderr: element.stderr || null,
       compile_output: element.compile_output || null,
-      status: passed? "Accepted" : "Wrong Answer",
+      status: passed ? "Accepted" : "Wrong Answer",
       time: `${element.time} s`,
       memory: `${element.memory} KB`,
     }
   })
 
   console.log("These are the detailed poling results: ", detailedResults)
-
 
   return res
     .status(200)

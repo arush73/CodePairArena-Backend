@@ -4,8 +4,13 @@ import { verifyJWT } from "../middlewares/auth.middleware.js"
 const router = Router()
 router.use(verifyJWT)
 
-import { createSubmission, getSubmisions } from "../controllers/submission.controllers.js"
+import {
+  createSubmission,
+  getSubmisions,
+  getMySubmissions,
+} from "../controllers/submission.controllers.js"
 
-router.route("/:problemId").post(verifyJWT,createSubmission).get(getSubmisions)
+router.route("/my-submissions").get(getMySubmissions)
+router.route("/:problemId").post(createSubmission).get(getSubmisions)
 
 export default router

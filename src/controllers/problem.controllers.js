@@ -81,7 +81,10 @@ const getAllProblems = asyncHandler(async (req, res) => {
   // })
 
   // const problem = await Problem.find({})
-  const problem = await Problem.find({}, {id:1,title: 1 , difficulty: 1}).sort({ id: 1 })
+  const problem = await Problem.find(
+    {},
+    { id: 1, title: 1, difficulty: 1 }
+  ).sort({ id: 1 })
 
   if (!problem)
     throw new ApiError(
@@ -209,7 +212,7 @@ const addProblem = asyncHandler(async (req, res) => {
   const detailedResults = pollingResults.map((element) => {
     if (index >= expectedOutput.length) index = 0
 
-    const passed = (element.stdout) === (expectedOutput[index])
+    const passed = element.stdout === expectedOutput[index]
     if (!passed) allPasses = false
 
     index++

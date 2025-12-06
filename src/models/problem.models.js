@@ -60,14 +60,14 @@ const problemSchema = new mongoose.Schema(
     companies: [{ type: String }],
     hints: [{ type: String }],
     editorial: { type: String },
-    testCases: [TestcaseSchema],// input output
+    testCases: [TestcaseSchema], // input output
     codeSnippet: [CodeSnippetSchema], // language code
-    refrenceSolutions: [RefrenceSolutionSchema],// language solution
+    refrenceSolutions: [RefrenceSolutionSchema], // language solution
     relatedTopics: {
       type: String,
     },
   },
-  { timestamps: true , strict:false}
+  { timestamps: true, strict: false }
 )
 
 problemSchema.plugin(mongooseAggregatePaginate)

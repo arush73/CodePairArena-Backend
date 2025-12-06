@@ -7,10 +7,10 @@ import { rateLimit } from "express-rate-limit"
 import cors from "cors"
 import morganMiddleware from "./logger/morgan.logger.js"
 import session from "express-session"
-import  "./passport/index.js"
+import "./passport/index.js"
+import { ApiError } from "./utils/ApiError.js"
 
 const app = express()
-console.log(process.env.EXPRESS_SESSION_SECRET)
 
 app.use(express.json({ limit: "16kb" }))
 app.use(express.urlencoded({ extended: true, limit: "16kb" }))
@@ -27,8 +27,8 @@ app.use(
 )
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5000,
+  windowMs: 5 * 60 * 1000,
+  max: 150,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req, res) => {
@@ -61,6 +61,7 @@ import authRouter from "./routes/auth.routes.js"
 import executeCodeRouter from "./routes/executeCode.routes.js"
 import problemRouter from "./routes/problem.routes.js"
 import submissionRouter from "./routes/submission.routes.js"
+import profileRouter from "./routes/profile.routes.js"
 
 // decalring routes
 app.get("/", (_, res) => {
@@ -71,5 +72,6 @@ app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/execute", executeCodeRouter)
 app.use("/api/v1/problem", problemRouter)
 app.use("/api/v1/submission", submissionRouter)
+app.use("/api/v1/profile", profileRouter)
 
 export default app

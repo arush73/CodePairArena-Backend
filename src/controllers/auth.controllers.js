@@ -611,19 +611,19 @@ const cookieSetter = asyncHandler(async (req, res) => {
 
   console.log("This is the incoming accessToken: ", accessToken)
   console.log("This is the incoming refreshToken: ", refreshToken)
-  
+
   const isAccessTokenValid = jwt.verify(
     accessToken,
     process.env.ACCESS_TOKEN_SECRET
   )
   if (!isAccessTokenValid) throw new ApiError(401, "accessToken is invalid")
-  
+
   const isRefreshTokenValid = jwt.verify(
     refreshToken,
     process.env.REFRESH_TOKEN_SECRET
   )
   if (!isRefreshTokenValid) throw new ApiError(401, "refreshToken is invalid")
-  if(!accessToken || !refreshToken)
+  if (!accessToken || !refreshToken)
     throw new ApiError(400, "token to send krr bc!!")
 
   return res
@@ -649,5 +649,5 @@ export {
   getCurrentUser,
   updateUserAvatar,
   handleSocialLogin,
-  cookieSetter
+  cookieSetter,
 }
