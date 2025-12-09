@@ -1,9 +1,8 @@
 import Mailgen from "mailgen"
 import nodemailer from "nodemailer"
 import logger from "../logger/winston.logger.js"
-import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// const resend = new Resend(process.env.RESEND_API_KEY)
 
 const sendMail = async (options) => {
   const mailGenerator = new Mailgen({
